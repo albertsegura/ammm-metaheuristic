@@ -78,12 +78,45 @@ class InputGenerator {
 			instructions = new Instruction[numInstructions];
 			dependencyMatrix = new int[numInstructions*numInstructions];
 			rng = new RandomNumberGenerator(10);
+			generateInstructions();
+			generateMatrix();
 		}
 
 		~InputGenerator() {
 			delete[] dependencyMatrix;
 			delete[] instructions;
 			delete rng;
+		}
+
+		void generateInstructions() {
+			for (int i = 0; i < numInstructions; ++i) {
+				instructions[i].timeFD = rng->random(10);
+				instructions[i].timeEX = rng->random(10);
+				instructions[i].timeWB = rng->random(10);
+
+				int predecesors = rng->random(3);
+				if (predecesors == 1 && i >= 1) {
+					instructions[i].parent1 = rng->random(numInstructions);
+					instructions[i].parent2 = -1;
+				} else if (predecesors == 2 && i >= 2) {
+					instructions[i].parent1 = rng->random(numInstructions);
+					instructions[i].parent2 = rng->random(numInstructions);
+					if (instructions[i].parent1 == instructions[i].parent2)
+						instructions[i].parent2 = (instructions[i].parent2+1)%numInstructions;
+				} else {
+					instructions[i].parent1 = -1;
+					instructions[i].parent2 = -1;
+				}
+			}
+		}
+
+		void generateMatrix() {
+			for (int i = 0; i < numInstructions; ++i) {
+				if (instructions[i].parent1 != -1)
+					dependencyMatrix[(instructions[i].parent1*numInstructions)+i] = 1;
+				if (instructions[i].parent2 != -1)
+					dependencyMatrix[(instructions[i].parent2*numInstructions)+i] = 1;
+			}
 		}
 
 		string getMatrixILP() {
