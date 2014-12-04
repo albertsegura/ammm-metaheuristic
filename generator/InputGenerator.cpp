@@ -1,8 +1,10 @@
 #include <iostream>
-#include  <cstdio>
+#include <cstdio>
 #include <ctime>
 #include <cstdlib>
 #include <string>
+#include <iostream>
+#include <fstream>
 using namespace std;
 
 bool debug;
@@ -131,7 +133,24 @@ class InputGenerator {
 					return s;
 				}
 
-		void printToILP() {
+		void writeILP(string name) {
+			string s = getILPstring();
+			writeToFile(name, s);
+		}
+
+		void writeMH(string name) {
+			string s = getMHstring();
+			writeToFile(name, s);
+		}
+
+		void writeToFile(string name, string text) {
+			ofstream myfile;
+			myfile.open (name);
+			myfile << text;
+			myfile.close();
+		}
+
+		string getILPstring() {
 			string ilp1 = "nInstructions = ";
 			string ilp2 = ";\np = ";
 			string ilp3 = ";\nE = [";
@@ -151,10 +170,10 @@ class InputGenerator {
 
 			string final = ilp1+d1+ilp2+d2+ilp3+m+ilp4+vFD+ilp5+vEX+ilp6+vWB+ilp7;
 
-			cout << final;
+			return final;
 		}
 
-		void printToMH() {
+		string getMHstring() {
 			string d1 = to_string(numInstructions);
 			string d2 = to_string(numProcs);
 
@@ -166,23 +185,32 @@ class InputGenerator {
 
 			string final = d1+"\n"+d2+"\n\n"+m+"\n"+vFD+"\n"+vEX+"\n"+vWB+"\n";
 
-			cout << final;
+			return final;
 		}
 
 };
 
+string convert(int num, int digits) {
+	string s = to_string(num);
+	int sDigits = s.size();
+	for (int i = 0; i < digits-sDigits; ++i)
+		s = "0"+s;
+	return s;
+}
+
 int main(int argc, const char* argv[]) {
-	if (argc != 4) {
-		cout << "usage: InputGenerator numProcs numInstructions debug" << endl;
+	if (argc != 6) {
+		cout << "usage: InputGenerator numProcs numInstructions inputNum numDigits debug" << endl;
 		return EXIT_FAILURE;
 	}
-	debug = atoi(argv[3]) == 1 ? true : false;
+	string num = convert(atoi(argv[3]), atoi(argv[4]));
+	debug = atoi(argv[5]) == 1 ? true : false;
 	InputGenerator * ig = new InputGenerator(atoi(argv[1]), atoi(argv[2]));
 	if (debug) {
 		cout << "Generating " << ig->numInstructions << " random instructions." << endl;
 	}
-	ig->printToILP();
-	ig->printToMH();
+	ig->writeILP("Input"+num+".dat");
+	ig->writeMH("Input"+num+".mh");
 	delete ig;
 	return EXIT_SUCCESS;
 }
