@@ -1,0 +1,28 @@
+/*********************************************
+ * OPL 12.5 Data
+ * Author: pedro
+ * Creation Date: Nov 13, 2014 at 3:09:53 PM
+ *********************************************/
+
+// Number of instructions
+nInstructions = 4;
+
+// Number of processors
+p = 1;
+
+// Instruction dependency
+// E(i,j) denotes that j depends on i
+E = [	[0 0 0 0]
+		[0 0 0 1]
+		[0 0 0 1]
+		[0 0 0 0] ];
+
+// Time decode+fetch
+tdf = [0 1 2 4];
+
+// Time execute
+tex = [0 2 3 4];
+
+// Time write back
+twb = [0 3 3 3];
+
