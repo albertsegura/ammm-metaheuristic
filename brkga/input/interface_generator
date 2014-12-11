@@ -1,0 +1,8 @@
+./InputGenerator 8 4 4 2 0
+./InputGenerator 8 6 6 2 0
+./InputGenerator 8 8 8 2 0
+./InputGenerator 8 10 10 3 0
+./InputGenerator 8 16 16 3 0
+./InputGenerator 8 32 32 3 0
+./InputGenerator 8 64 64 3 0
+./InputGenerator 8 128 128 4 0

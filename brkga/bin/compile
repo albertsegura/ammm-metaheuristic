@@ -1,0 +1,28 @@
+g++ -c ../src/SampleDecoder.cpp
+
+sed -i '15s/.*/const unsigned n = 4;/' ../src/samplecode.cpp
+g++ SampleDecoder.o -o samplecode_4 ../src/samplecode.cpp
+
+sed -i '15s/.*/const unsigned n = 6;/' ../src/samplecode.cpp
+g++ SampleDecoder.o -o samplecode_6 ../src/samplecode.cpp
+
+sed -i '15s/.*/const unsigned n = 8;/' ../src/samplecode.cpp
+g++ SampleDecoder.o -o samplecode_8 ../src/samplecode.cpp
+
+sed -i '15s/.*/const unsigned n = 10;/' ../src/samplecode.cpp
+g++ SampleDecoder.o -o samplecode_10 ../src/samplecode.cpp
+
+sed -i '15s/.*/const unsigned n = 16;/' ../src/samplecode.cpp
+g++ SampleDecoder.o -o samplecode_16 ../src/samplecode.cpp
+
+sed -i '15s/.*/const unsigned n = 32;/' ../src/samplecode.cpp
+g++ SampleDecoder.o -o samplecode_32 ../src/samplecode.cpp
+
+sed -i '15s/.*/const unsigned n = 64;/' ../src/samplecode.cpp
+g++ SampleDecoder.o -o samplecode_64 ../src/samplecode.cpp
+
+sed -i '15s/.*/const unsigned n = 128;/' ../src/samplecode.cpp
+g++ SampleDecoder.o -o samplecode_128 ../src/samplecode.cpp
+
+
+
