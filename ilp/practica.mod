@@ -30,20 +30,21 @@ execute {
 	U = 0;
 	for (var i = 1; i <= nInstructions; i++)
 		U += tdf[i]+tex[i]+twb[i];
-	writeln("Value U: "+ U +".");
+	//writeln("Value U: "+ U +".");
+	//U = 1000000;
 };
 
 // Schedule graph, node i precedes node j
 dvar boolean xij[i in INS][j in INS];
 
 // Start time of instruction i
-dvar float+ ti[i in INS];
+dvar int+ ti[i in INS];
 
 // yij = xij*ti
-dvar float+ yij[i in INS][j in INS];
+dvar int+ yij[i in INS][j in INS];
 
 // Makespan
-dvar float+ z;
+dvar int+ z;
 
 // Objective
 minimize z;
