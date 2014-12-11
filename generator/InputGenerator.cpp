@@ -26,7 +26,10 @@ class RandomNumberGenerator {
 		}
 
 		int random(int max) {
-			return rand() % max;
+			if (max == 0)
+				return 0;
+			else
+				return rand() % max;
 		}
 };
 
@@ -101,8 +104,6 @@ class InputGenerator {
 				} else if (predecesors == 2 && i >= 2) {
 					instructions[i].parent1 = rng->random(i-1);
 					instructions[i].parent2 = rng->random(i-1);
-					if (instructions[i].parent1 == instructions[i].parent2)
-						instructions[i].parent2 = (instructions[i].parent2+1)%(i-1);
 				} else {
 					instructions[i].parent1 = -1;
 					instructions[i].parent2 = -1;
@@ -235,8 +236,8 @@ class InputGenerator {
 		}
 
 		string getMHstring() {
-			string d1 = to_string(numInstructions);
-			string d2 = to_string(numProcs);
+			string d1 = to_string(numProcs);
+			string d2 = to_string(numInstructions);
 
 			string m = getMatrixMH();
 
