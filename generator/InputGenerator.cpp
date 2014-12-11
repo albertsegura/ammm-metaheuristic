@@ -96,13 +96,13 @@ class InputGenerator {
 
 				int predecesors = rng->random(3);
 				if (predecesors == 1 && i >= 1) {
-					instructions[i].parent1 = rng->random(numInstructions);
+					instructions[i].parent1 = rng->random(i-1);
 					instructions[i].parent2 = -1;
 				} else if (predecesors == 2 && i >= 2) {
-					instructions[i].parent1 = rng->random(numInstructions);
-					instructions[i].parent2 = rng->random(numInstructions);
+					instructions[i].parent1 = rng->random(i-1);
+					instructions[i].parent2 = rng->random(i-1);
 					if (instructions[i].parent1 == instructions[i].parent2)
-						instructions[i].parent2 = (instructions[i].parent2+1)%numInstructions;
+						instructions[i].parent2 = (instructions[i].parent2+1)%(i-1);
 				} else {
 					instructions[i].parent1 = -1;
 					instructions[i].parent2 = -1;
@@ -120,9 +120,13 @@ class InputGenerator {
 		}
 
 		string getMatrixILP() {
-			string s = "\n";
+			string s = "\n[";
+			for (int i = 0; i < numInstructions+1; ++i) {
+				s = s + "0 ";
+			}
+			s = s + "]\n";
 			for (int i = 0; i < numInstructions; ++i) {
-				s = s + "[";
+				s = s + "[ 0 ";
 				for (int j = 0; j < numInstructions; ++j) {
 					s = s + to_string(dependencyMatrix[(i*numInstructions)+j]) + " ";
 				}
@@ -151,20 +155,44 @@ class InputGenerator {
 		}
 
 		string getEXvector() {
-					string s;
-					for (int i = 0; i < numInstructions; ++i) {
-						s = s + to_string(instructions[i].timeEX) + " ";
-					}
-					return s;
-				}
+			string s;
+			for (int i = 0; i < numInstructions; ++i) {
+				s = s + to_string(instructions[i].timeEX) + " ";
+			}
+			return s;
+		}
 
 		string getWBvector() {
-					string s;
-					for (int i = 0; i < numInstructions; ++i) {
-						s = s + to_string(instructions[i].timeWB) + " ";
-					}
-					return s;
-				}
+			string s;
+			for (int i = 0; i < numInstructions; ++i) {
+				s = s + to_string(instructions[i].timeWB) + " ";
+			}
+			return s;
+		}
+
+		string getFDvectorILP() {
+			string s = "0 ";
+			for (int i = 0; i < numInstructions; ++i) {
+				s = s + to_string(instructions[i].timeFD) + " ";
+			}
+			return s;
+		}
+
+		string getEXvectorILP() {
+			string s = "0 ";
+			for (int i = 0; i < numInstructions; ++i) {
+				s = s + to_string(instructions[i].timeEX) + " ";
+			}
+			return s;
+		}
+
+		string getWBvectorILP() {
+			string s = "0 ";
+			for (int i = 0; i < numInstructions; ++i) {
+				s = s + to_string(instructions[i].timeWB) + " ";
+			}
+			return s;
+		}
 
 		void writeILP(string name) {
 			string s = getILPstring();
@@ -192,14 +220,14 @@ class InputGenerator {
 			string ilp6 = "];\ntwb = [";
 			string ilp7 = "];\n";
 
-			string d1 = to_string(numInstructions);
+			string d1 = to_string(numInstructions+1);
 			string d2 = to_string(numProcs);
 
 			string m = getMatrixILP();
 
-			string vFD = getFDvector();
-			string vEX = getEXvector();
-			string vWB = getWBvector();
+			string vFD = getFDvectorILP();
+			string vEX = getEXvectorILP();
+			string vWB = getWBvectorILP();
 
 			string final = ilp1+d1+ilp2+d2+ilp3+m+ilp4+vFD+ilp5+vEX+ilp6+vWB+ilp7;
 
