@@ -86,6 +86,8 @@ const unsigned n = 128;
 		}
 	} while (generation < MAX_GENS);
 	
+    cout << algorithm.getBestFitness() << std::endl;
+/*
 	std::cout << "Best solution found has objective value = "
 	 		<< algorithm.getBestFitness() << std::endl;
     std::vector< double > best_chromo=algorithm.getBestChromosome();
@@ -94,7 +96,7 @@ const unsigned n = 128;
     best_chromosome_list=get_chromosome_list(best_chromo);
     print_chromosome(best_chromosome_list);
     my_decoder.calculate_fitness_value(best_chromosome_list);
-	
+*/
 	return 0;
 }
 
