@@ -5,7 +5,7 @@ PROCS=8
 NUM_DIGITS=3
 
 START_SMALL=1
-END_SMALL=5
+END_SMALL=150
 
 START_BIG=6
 END_BIG=10
@@ -14,12 +14,12 @@ BIN_GRASP='echo '
 BIN_BRKGA='echo '
 
 GENERATE_SMALL=1
-GENERATE_BIG=1
+GENERATE_BIG=0
 
-GRASP_SMALL=1
-BRKGA_SMALL=1
-GRASP_BIG=1
-BRKGA_BIG=1
+GRASP_SMALL=0
+BRKGA_SMALL=0
+GRASP_BIG=0
+BRKGA_BIG=0
 
 # Generate the small data
 if [ $GENERATE_SMALL -eq 1 ]
@@ -60,7 +60,7 @@ then
 fi
 
 # Generate the big data
-if [ $GENERATE_SMALL -eq 1 ]
+if [ $GENERATE_BIG -eq 1 ]
 then
 	echo "Generating big data"
 	for i in `seq $START_BIG $END_BIG`;

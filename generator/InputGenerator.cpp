@@ -16,7 +16,7 @@ class RandomNumberGenerator {
 	public:
 		RandomNumberGenerator(int max) {
 			this->max = max;
-			srand(time(NULL));
+			srand(clock());
 		}
 
 		~RandomNumberGenerator() {}
