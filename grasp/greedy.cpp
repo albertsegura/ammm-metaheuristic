@@ -4,6 +4,8 @@
 #include <vector>
 #include <functional>
 #include <cstring>
+#include <list>
+#include <ctime>
 //#include <string.h>
 
 using namespace std;
@@ -11,25 +13,38 @@ using namespace std;
 int nproc;
 int ninst;
 
-float *stream_df;
-float *stream_ex;
-float *stream_wb;
+struct inst_t {
+	int ini_df, df, fini_df;
+	int ini_ex, ex, fini_ex;
+	int ini_wb, wb, fini_wb;
 
-struct inst_stages {
-	float df;
-	float ex;
-	float wb;
-
-	int num_predecessors;	// Ci <- |d-(i)|
-	float start_time;	// Ei
+	int npredecessors;	// Ci <- |d-(i)|
+	int start_time;		// Ei
+	int id;
 };
 
-int *inst_dep_matrix;
-int *inst_pre_matrix;
-int *inst_succ_matrix;
+struct proc_t {
+	list<int> sched_inst;
+	int ninst;
+};
 
-struct inst_stages *instructions;
-priority_queue<int> inst_queue;
+int * inst_dep_matrix;
+int * inst_npredecessors;
+vector<struct proc_t> procs;
+struct inst_t * instructions;
+
+vector<struct proc_t> wtmp;
+struct inst_t * winstructions;
+
+class Compare {
+	public:
+	bool operator()(inst_t& i1, inst_t& i2) { // <
+		if (i1.start_time <= i1.start_time) return true;
+		return false;
+	}
+};
+
+priority_queue<inst_t, std::vector<inst_t>, Compare> inst_queue;
 
 
 void print_input() {
@@ -53,12 +68,6 @@ void print_input() {
 	cout << endl;
 }
 
-void print_output() {
-	for (int k=0; k<nproc; k++) {
-
-	}
-}
-
 int num_predecessors(int inst) {
 	int num = 0;
 
@@ -68,50 +77,89 @@ int num_predecessors(int inst) {
 	return num;
 }
 
+int hh(struct inst_t inst, int k, vector<struct proc_t> &proc, struct inst_t * vinst) {
+	int a, b, c;
+	int streamdf, streamex, streamwb;
+	struct inst_t cpu_inst;
 
-float h(int i, int k) {
-	float a, b, c;
-	
-	a = max(instructions[i].start_time, stream_df[k]);
-	b = max(a+instructions[i].df, stream_ex[k]);
-	c = max(b+instructions[i].ex, stream_wb[k]);
+	if (proc[k].ninst == 0) {
+		streamdf = 0;
+		streamex = 0;
+		streamwb = 0;
+	} else {
+		list<int>::iterator it = proc[k].sched_inst.begin();
+		advance(it,proc[k].ninst-1);
 
-	cout << endl << "start_time " << instructions[i].start_time << endl;
-	cout << "stream df " << stream_df[k] << endl;
-	cout << "stream ex " << stream_ex[k] << endl;
-	cout << "stream wb " << stream_wb[k] << endl;
-	cout << "a: " << a << " b: " << b << " c: " << c << endl << endl;
+		streamdf = vinst[*it].fini_df;
+		streamex = vinst[*it].fini_ex;
+		streamwb = vinst[*it].fini_wb;
+	}
 
-	return (c-(instructions[i].df+instructions[i].ex));
+	a = max(inst.start_time, streamdf);
+	b = max(a+inst.df, streamex);
+	c = max(b+inst.ex, streamwb);
+
+	//cout << endl << "start_time " << inst.start_time << endl;
+	//cout << "stream df " << streamdf << endl;
+	//cout << "stream ex " << streamex << endl;
+	//cout << "stream wb " << streamwb << endl;
+	//cout << "a: " << a << " b: " << b << " c: " << c << endl << endl;
+
+	return (c-(inst.df+inst.ex));
 }
 
-// TODO check for errors with the input2
-// TODO save the streams
-// TODO include start time and id of every instruction in the streams
-// 
 
-int main(int argc, char *argv[]) {
 
-	/*  INPUT */
-	cout << "Input number of processors: ";
+int h(struct inst_t &inst, int k, struct inst_t * vinst) {
+	int a, b, c;
+	int streamdf, streamex, streamwb;
+	struct inst_t cpu_inst;
+	
+	if (procs[k].sched_inst.empty()) {
+		streamdf = 0;
+		streamex = 0;
+		streamwb = 0;
+	}
+	else {
+		streamdf = vinst[procs[k].sched_inst.back()].fini_df;
+		streamex = vinst[procs[k].sched_inst.back()].fini_ex;
+		streamwb = vinst[procs[k].sched_inst.back()].fini_wb;
+	}
+
+	a = max(inst.start_time, streamdf);
+	b = max(a+inst.df, streamex);
+	c = max(b+inst.ex, streamwb);
+
+	//cout << endl << "start_time " << inst.start_time << endl;
+	//cout << "stream df " << streamdf << endl;
+	//cout << "stream ex " << streamex << endl;
+	//cout << "stream wb " << streamwb << endl;
+	//cout << "a: " << a << " b: " << b << " c: " << c << endl << endl;
+
+	return (c-(inst.df+inst.ex));
+}
+
+void init() {
+	//cout << "Input number of processors: ";
 	cin >> nproc;
 
-	cout << "Input number of instructions: ";
+	//cout << "Input number of instructions: ";
 	cin >> ninst;
 
-	stream_df = (float *) malloc(sizeof(float)*nproc);
-	stream_ex = (float *) malloc(sizeof(float)*nproc);
-	stream_wb = (float *) malloc(sizeof(float)*nproc);
+	srand(clock());
 
-	memset(stream_df, 0, sizeof(float)*nproc);
-	memset(stream_ex, 0, sizeof(float)*nproc);
-	memset(stream_wb, 0, sizeof(float)*nproc);
+	procs.resize(nproc);
+	wtmp.resize(nproc); 
+	for (int i=0; i<nproc; i++) {
+		procs[i].ninst = 0;
+	}
 
-	instructions = (struct inst_stages *) malloc(sizeof(struct inst_stages)*ninst);
-	memset(instructions, 0, sizeof(struct inst_stages)*ninst);
-	inst_dep_matrix = (int *) malloc(sizeof(struct inst_stages)*ninst*ninst);
+	instructions = (struct inst_t *) calloc(ninst, sizeof(struct inst_t));
+	winstructions = (struct inst_t *) calloc(ninst, sizeof(struct inst_t));
+	inst_dep_matrix = (int *) malloc(sizeof(int)*ninst*ninst);
+	inst_npredecessors = (int *) calloc(ninst, sizeof(int));
 
-	cout << "Input instruction dependency matrix: ";
+	//cout << "Input instruction dependency matrix: ";
 	
 	for (int i=0; i < ninst*ninst; i++) 
 		cin >> inst_dep_matrix[i];
@@ -122,57 +170,320 @@ int main(int argc, char *argv[]) {
 		cin >> instructions[i].ex;
 	for(int i=0; i < ninst; i++)
 		cin >> instructions[i].wb;
+}
+
+void print_solution() {
+	int i = 0;
+
+	for (vector<proc_t>::iterator it = procs.begin() ; it != procs.end(); ++it, ++i) {
+		cout << "Processor " << i << " , computes " << it->ninst << " instructions" << endl; 
+		cout << "\tdf\tex\twb" << endl;
+		for (list<int>::iterator itt = it->sched_inst.begin() ; itt != it->sched_inst.end(); ++itt) {
+			cout << "Instruction " << instructions[*itt].id << ": "<< endl;
+			cout << "\t" << instructions[*itt].ini_df << ", " << instructions[*itt].fini_df;
+			cout << "\t" << instructions[*itt].ini_ex << ", " << instructions[*itt].fini_ex;
+			cout << "\t" << instructions[*itt].ini_wb << ", " << instructions[*itt].fini_wb;
+			cout << endl;
+		}
+	}
+}
+
+void rcl(struct inst_t inst, int *c_proc, int *c_start_time) {
+	vector<int> rclv(nproc);
+	vector<int> rclvid(nproc);
+
+	int threshold, id, minarg, maxarg, minval, maxval, value, k, i;
+	minarg = 0,
+	maxarg = 0;
+	minval = h(inst, 0, instructions);
+	maxval = minval;
+	//cout << minval << ", ";	
 	
-	print_input();
-	
-	/* HEURISTIC */
+	rclv[0] = minval;
+	for (k=1; k < rclv.size(); k++) {
+		//cout << k << ", ";
+		value = h(inst, k, instructions);
+		//cout << value << ", ";
+		rclv[k] = value;
+		if (minval > value) {
+			minval = value;
+			minarg = k;
+		}
+		if (maxval < value) {
+			maxval = value;
+			maxarg = k;
+		}
+	}
+	//cout << endl;
+	//cout << "min: " << minval << " max: " << maxval << endl;
+	threshold = minval+int(0.5*float(maxval-minval));
+	//cout << "threshold: " << threshold << endl;
+
+	//cout << threshold << ", " << rclv.size() << endl;
+	/*for (int i=0; i<nproc; i++)
+		cout << rclv[i] << ", ";
+	cout << endl; 
+	*/
+
+	for (i=0, id=0; i < nproc; i++) {
+		if (rclv[i] <= threshold) {
+			rclv[id] = rclv[i];
+			rclvid[id] = i;
+			id++;
+		}
+	}
+
+	*c_proc = rclvid[id!=0 ? rand()%id:0];
+
+	*c_start_time = rclv[*c_proc];
+}
+
+void grasp(int greedy) {
+
 	for (int inst=0; inst < ninst; inst++) {
-		instructions[inst].num_predecessors = num_predecessors(inst);
+		instructions[inst].id=inst;
 		instructions[inst].start_time = 0;
-		if (instructions[inst].num_predecessors == 0)
-			inst_queue.push(inst);
+		instructions[inst].ini_df = 0;
+		instructions[inst].ini_ex = 0;
+		instructions[inst].ini_wb = 0;
+		instructions[inst].fini_df = 0;
+		instructions[inst].fini_ex = 0;
+		instructions[inst].fini_wb = 0;
+		instructions[inst].npredecessors = num_predecessors(inst);
+		inst_npredecessors[inst] = instructions[inst].npredecessors;
+		if (instructions[inst].npredecessors == 0)
+			inst_queue.push(instructions[inst]);
 	}
 
 	while (!inst_queue.empty()) {
-		int inst = inst_queue.top();
+		struct inst_t inst = inst_queue.top();
 		inst_queue.pop();
+		int k;
+		int start_time;
 		
-		int minarg = 0;
-		int minval = h(inst, 0);
-		for (int i=1; i < nproc; i++) {
-			int value = h(inst, i);
-			if (minval > value) {
-				minval = value;
-				minarg = i;
+		if (greedy) {
+			int minarg = 0;
+			int minval = h(inst, 0, instructions);
+			for (k=1; k < nproc; k++) {
+				int value = h(inst, k, instructions);
+				cout << value << ", ";
+				if (minval > value) {
+					minval = value;
+					minarg = k;
+				}
 			}
+			cout << endl;
+			k=minarg;
+			start_time = minval;
+		} else {
+			rcl(inst, &k, &start_time);
+			//cout << k << ", " << start_time << endl;
 		}
 
-		int k = minarg; // processor selected
-		int start_time = minval; // start time 
-		cout << "i: " << inst << " ti: " << start_time << endl;
+		instructions[inst.id].start_time = start_time;
+		instructions[inst.id].ini_df  = start_time;
+		instructions[inst.id].fini_df = start_time+inst.df;
 
-		// TODO afegir a "llista" de inst processades per cada proc
-		stream_df[k] = start_time+instructions[inst].df;
-		stream_ex[k] = start_time+instructions[inst].df+instructions[inst].ex;
-		stream_wb[k] = start_time+instructions[inst].df+instructions[inst].ex+instructions[inst].wb;
+		instructions[inst.id].ini_ex  =  start_time+inst.df;
+		instructions[inst.id].fini_ex = start_time+inst.df+inst.ex;
 
-		cout << "Inst " << inst << " runs at proc: " << k << endl;
-		cout << "\t" << stream_df[k] << " " << stream_ex[k] << " "  << stream_wb[k] << endl;
+		instructions[inst.id].ini_wb  = start_time+inst.df+inst.ex;
+		instructions[inst.id].fini_wb = start_time+inst.df+inst.ex+inst.wb;
+
+		procs[k].sched_inst.push_back(inst.id);
+		procs[k].ninst++;
+		
+		//cout << "Inst " << inst.id << " runs at proc: " << k << endl;
+		//cout << "\t" << inst.fini_df << " " << inst.fini_ex << " "  << inst.fini_wb << endl;
 		
 		for(int j=0; j < ninst; j++) {
 			// if instruction j is a successor of inst
-			if (inst_dep_matrix[inst*ninst+j]) {
-				inst_dep_matrix[inst*ninst+j] = 0;
-				instructions[j].num_predecessors--;
+			if (inst_dep_matrix[inst.id*ninst+j]) {
+				//inst_dep_matrix[inst.id*ninst+j] = 0;
+				instructions[j].npredecessors--;
+				
 				instructions[j].start_time = max(instructions[j].start_time, 
-						start_time+instructions[inst].df+instructions[inst].ex+instructions[inst].wb);
+						inst.fini_wb);
 
-				if (instructions[j].num_predecessors == 0)
-					inst_queue.push(j);
+				if (instructions[j].npredecessors == 0)
+					inst_queue.push(instructions[j]);
 			}
 		}
 	}
 
-	//print_output();
+
+}
+
+
+int compute_times_local() {
+	int feasible = 1;
+	int proc_blocked = 0;
+	int proc_finished = 0;
+
+	//cout << "Feasibility" << endl;
+	for (int p=0; (proc_blocked + proc_finished) < wtmp.size(); p=(p+1)%wtmp.size()) {
+		// No instruction on p to reschedule
+		if (wtmp[p].ninst == wtmp[p].sched_inst.size()) {
+			proc_finished++;
+			continue;
+		}
+
+		list<int>::iterator it = wtmp[p].sched_inst.begin();
+		advance(it,wtmp[p].ninst);
+		
+		struct inst_t * inst = &winstructions[*it];
+
+		// If instruction has no predecessors, schedule it
+		if (inst->npredecessors != 0) {
+			proc_blocked++;
+			continue;
+		} else {
+			proc_blocked = 0;
+			int start_time =  hh(*inst, p, wtmp, winstructions);
+
+			winstructions[inst->id].start_time = start_time;
+			winstructions[inst->id].ini_df  = start_time;
+			winstructions[inst->id].fini_df = start_time+inst->df;
+
+			winstructions[inst->id].ini_ex  =  start_time+inst->df;
+			winstructions[inst->id].fini_ex = start_time+inst->df+inst->ex;
+
+			winstructions[inst->id].ini_wb  = start_time+inst->df+inst->ex;
+			winstructions[inst->id].fini_wb = start_time+inst->df+inst->ex+inst->wb;
+
+			wtmp[p].ninst++;
+		}
+
+		// Update predecessors
+		for(int j=0; j < ninst; j++) {
+			// if instruction j is a successor of inst
+			if (inst_dep_matrix[inst->id*ninst+j]) {
+				winstructions[j].npredecessors--;
+				winstructions[j].start_time = max(winstructions[j].start_time, 
+						inst->fini_wb);
+
+			}
+		}
+
+
+	}
+
+	if (proc_blocked > 0) feasible = 0;
+
+
+	return feasible;
+}
+
+void copy_solution( vector<struct proc_t> &dest_proc, vector<struct proc_t> &source_proc, 
+		    struct inst_t * dest_inst, struct inst_t * source_inst ) {
+
+	for (int i=0; i<dest_proc.size(); i++) {
+		dest_proc[i].ninst = source_proc[i].ninst;
+		dest_proc[i].sched_inst.clear();
+		dest_proc[i].sched_inst.insert(
+			dest_proc[i].sched_inst.begin(), 
+			source_proc[i].sched_inst.begin(), 
+			source_proc[i].sched_inst.end());
+	}
+	
+	for(int i=0; i<ninst; i++) {
+		dest_inst[i] = source_inst[i];
+	}
+}
+
+void clean_solution(vector<struct proc_t> &proc, struct inst_t * inst) {
+	//cout << "clean solution" << endl;
+	for(int i=0; i<proc.size(); i++)
+		proc[i].ninst = 0;
+
+	for(int i=0; i<ninst; i++) {
+		inst[i].ini_df = 0;
+		inst[i].fini_df = 0;
+		inst[i].ini_ex = 0;
+		inst[i].fini_ex = 0;
+		inst[i].ini_wb = 0;
+		inst[i].fini_wb = 0;
+		inst[i].npredecessors = inst_npredecessors[i];
+		inst[i].start_time = 0;
+	}
+
+}
+
+int evaluate_solution(vector<struct proc_t> &proc_sol, struct inst_t * inst_sol) {
+	//cout << "evaluate_solution" << endl;
+	int time = 0;
+	for (vector<proc_t>::iterator it = procs.begin() ; it != procs.end(); ++it) {
+		time = max(time, inst_sol[it->sched_inst.back()].fini_wb);
+	}
+	
+	return time;
+}
+
+
+void exchange_inst(int p, int pp, int i1, int i2) {
+	list<int>::iterator itp = wtmp[p].sched_inst.begin();
+	advance(itp,i1);
+
+	list<int>::iterator itpp = wtmp[pp].sched_inst.begin();
+	advance(itpp,i2);
+
+	int aux = *itp;
+	*itp = *itpp;
+	*itpp = aux;
+}
+
+void local_search() {
+	int feasible;
+	list<int>::iterator it_inst1, it_inst2;
+	copy_solution(wtmp, procs, winstructions, instructions); // wtmp <- w
+
+	for (int p=0; p<nproc; p++) {
+		//cout << "p: " << p << endl;
+	for (int pp=p+1; pp<nproc; pp++) {
+		//cout << "pp: " << pp << endl;
+		for (int i1=0; i1<wtmp[p].sched_inst.size(); i1++) {
+			//cout << "inst1: " << i1 << "/" << wtmp[p].sched_inst.size() << endl;
+		for (int i2=0; i2<wtmp[pp].sched_inst.size(); i2++) {
+			//cout << "inst2: " << i2 << "/" << wtmp[pp].sched_inst.size() << endl;
+
+			// Exchange
+			exchange_inst(p, pp, i1, i2);
+
+			// Clean instruction tmp solution
+			clean_solution(wtmp, winstructions);
+			
+			// Compute times with the proposed solution
+			feasible = compute_times_local();
+			//if (feasible) cout << "Feasible: " << evaluate_solution(wtmp, winstructions) << endl;
+
+			// If feasible and better it becomes the new solution
+			if ( feasible && (evaluate_solution(wtmp, winstructions) < evaluate_solution(procs, instructions)) )
+				copy_solution(procs, wtmp, instructions, winstructions); // w <- wtmp
+			else
+				copy_solution(wtmp, procs, winstructions, instructions); // wtmp <- w
+			//cout << "Next" << endl;
+		}
+		}
+	}
+	}
+}
+
+int main(int argc, char *argv[]) {
+
+	init();
+
+	//print_input();
+	
+	grasp(0);
+
+	
+//	cout << "Initial solution: " << evaluate_solution(procs, instructions) << endl;
+
+	local_search();
+
+//	cout << "Final solution: " << evaluate_solution(procs, instructions) << endl;
+
+	cout << evaluate_solution(procs, instructions) << endl;
+	//print_solution();
 
 }

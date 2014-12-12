@@ -121,7 +121,7 @@ double calculate_fitness_value(std::list<int>list_instruction){
         }
         iter++;
         //End conditions
-        if(iter==maxiter || list_instruction.empty()){
+        if(list_instruction.empty()){
             end=1;
         }
     }
