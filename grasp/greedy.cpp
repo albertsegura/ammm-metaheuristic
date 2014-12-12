@@ -146,7 +146,9 @@ void init() {
 	//cout << "Input number of instructions: ";
 	cin >> ninst;
 
+	// TODO
 	srand(clock());
+	//srand(1);
 
 	procs.resize(nproc);
 	wtmp.resize(nproc); 
@@ -177,12 +179,12 @@ void print_solution() {
 
 	for (vector<proc_t>::iterator it = procs.begin() ; it != procs.end(); ++it, ++i) {
 		cout << "Processor " << i << " , computes " << it->ninst << " instructions" << endl; 
-		cout << "\tdf\tex\twb" << endl;
+		cout << "\t\tdf\tex\twb" << endl;
 		for (list<int>::iterator itt = it->sched_inst.begin() ; itt != it->sched_inst.end(); ++itt) {
-			cout << "Instruction " << instructions[*itt].id << ": "<< endl;
-			cout << "\t" << instructions[*itt].ini_df << ", " << instructions[*itt].fini_df;
-			cout << "\t" << instructions[*itt].ini_ex << ", " << instructions[*itt].fini_ex;
-			cout << "\t" << instructions[*itt].ini_wb << ", " << instructions[*itt].fini_wb;
+			cout << "\tInstruction " << instructions[*itt].id << ": "<< endl;
+			cout << "\t\t" << instructions[*itt].ini_df << ", " << instructions[*itt].fini_df;
+			cout << "\t\t" << instructions[*itt].ini_ex << ", " << instructions[*itt].fini_ex;
+			cout << "\t\t" << instructions[*itt].ini_wb << ", " << instructions[*itt].fini_wb;
 			cout << endl;
 		}
 	}
@@ -266,13 +268,11 @@ void grasp(int greedy) {
 			int minval = h(inst, 0, instructions);
 			for (k=1; k < nproc; k++) {
 				int value = h(inst, k, instructions);
-				cout << value << ", ";
 				if (minval > value) {
 					minval = value;
 					minarg = k;
 				}
 			}
-			cout << endl;
 			k=minarg;
 			start_time = minval;
 		} else {
@@ -296,14 +296,16 @@ void grasp(int greedy) {
 		//cout << "Inst " << inst.id << " runs at proc: " << k << endl;
 		//cout << "\t" << inst.fini_df << " " << inst.fini_ex << " "  << inst.fini_wb << endl;
 		
+		//cout << "Successors for: " << inst.id << endl;
 		for(int j=0; j < ninst; j++) {
 			// if instruction j is a successor of inst
 			if (inst_dep_matrix[inst.id*ninst+j]) {
-				//inst_dep_matrix[inst.id*ninst+j] = 0;
+				//cout << "dependecy with: " << j << endl;
 				instructions[j].npredecessors--;
 				
 				instructions[j].start_time = max(instructions[j].start_time, 
-						inst.fini_wb);
+						instructions[inst.id].fini_wb);
+				//cout << "startime: " << instructions[j].start_time << " old: " << instructions[j].start_time << "inst" << instructions[inst.id].fini_wb << endl;
 
 				if (instructions[j].npredecessors == 0)
 					inst_queue.push(instructions[j]);
@@ -316,15 +318,22 @@ void grasp(int greedy) {
 
 
 int compute_times_local() {
+	int proc_finished[nproc];
 	int feasible = 1;
 	int proc_blocked = 0;
-	int proc_finished = 0;
+	int nproc_finished = 0;
+
+	for (int p=0; p<nproc; p++) 
+		proc_finished[p] = 0;
 
 	//cout << "Feasibility" << endl;
-	for (int p=0; (proc_blocked + proc_finished) < wtmp.size(); p=(p+1)%wtmp.size()) {
+	for (int p=0; (proc_blocked + nproc_finished) < wtmp.size();) {
 		// No instruction on p to reschedule
-		if (wtmp[p].ninst == wtmp[p].sched_inst.size()) {
-			proc_finished++;
+		//cout << "p:"<< p << " proc blocked: " << proc_blocked << ", proc finished: " << nproc_finished<< endl;
+		if(wtmp[p].ninst == wtmp[p].sched_inst.size()) {
+			if (!proc_finished[p]) nproc_finished++;
+			proc_finished[p] = 1;
+			p=(p+1)%wtmp.size();
 			continue;
 		}
 
@@ -334,8 +343,10 @@ int compute_times_local() {
 		struct inst_t * inst = &winstructions[*it];
 
 		// If instruction has no predecessors, schedule it
-		if (inst->npredecessors != 0) {
+		//cout << "\tInst id: " << inst->id << ", predecessors: " << inst->npredecessors << endl;
+		if (inst->npredecessors > 0) {
 			proc_blocked++;
+			p=(p+1)%wtmp.size();
 			continue;
 		} else {
 			proc_blocked = 0;
@@ -358,9 +369,10 @@ int compute_times_local() {
 		for(int j=0; j < ninst; j++) {
 			// if instruction j is a successor of inst
 			if (inst_dep_matrix[inst->id*ninst+j]) {
+				//cout << "\t dep between: " << inst->id << "," << j << endl;
 				winstructions[j].npredecessors--;
 				winstructions[j].start_time = max(winstructions[j].start_time, 
-						inst->fini_wb);
+						winstructions[inst->id].fini_wb);
 
 			}
 		}
@@ -457,8 +469,9 @@ void local_search() {
 			//if (feasible) cout << "Feasible: " << evaluate_solution(wtmp, winstructions) << endl;
 
 			// If feasible and better it becomes the new solution
-			if ( feasible && (evaluate_solution(wtmp, winstructions) < evaluate_solution(procs, instructions)) )
+			if ( feasible && (evaluate_solution(wtmp, winstructions) < evaluate_solution(procs, instructions)) ) {
 				copy_solution(procs, wtmp, instructions, winstructions); // w <- wtmp
+			}
 			else
 				copy_solution(wtmp, procs, winstructions, instructions); // wtmp <- w
 			//cout << "Next" << endl;
@@ -476,14 +489,15 @@ int main(int argc, char *argv[]) {
 	
 	grasp(0);
 
-	
-//	cout << "Initial solution: " << evaluate_solution(procs, instructions) << endl;
+
+	//print_solution();
+	//cout << "Initial solution: " << evaluate_solution(procs, instructions) << endl;
 
 	local_search();
 
-//	cout << "Final solution: " << evaluate_solution(procs, instructions) << endl;
+	//cout << "Final solution: " << evaluate_solution(procs, instructions) << endl;
 
-	cout << evaluate_solution(procs, instructions) << endl;
 	//print_solution();
+	cout << evaluate_solution(procs, instructions) << endl;
 
 }
