@@ -2,19 +2,19 @@
 
 PROCS=8
 
-NUM_DIGITS=3
+NUM_DIGITS=4
 
-START_SMALL=1
-END_SMALL=150
+START_SMALL=0
+END_SMALL=750
 
-START_BIG=500
-END_BIG=500
+START_BIG=200
+END_BIG=200
 
-GENERATE_SMALL=0
+GENERATE_SMALL=1
 GENERATE_BIG=0
 
-GRASP_SMALL=0
-BRKGA_SMALL=0
+GRASP_SMALL=1
+BRKGA_SMALL=1
 GRASP_BIG=0
 BRKGA_BIG=0
 
@@ -22,10 +22,10 @@ BRKGA_BIG=0
 if [ $GENERATE_SMALL -eq 1 ]
 then
 	echo "Generating small data"
-	for i in `seq $START_SMALL $END_SMALL`;
+	for i in `seq $START_SMALL 10 $END_SMALL`;
 	do
 		NUM=$(./convert $i $NUM_DIGITS)
-		../generator/InputGenerator $PROCS $NUM_INST $NUM $NUM_DIGITS 0
+		../generator/InputGenerator $PROCS $NUM $NUM $NUM_DIGITS 0
 	done
 fi
 
@@ -33,7 +33,7 @@ fi
 if [ $GRASP_SMALL -eq 1 ]
 then
 	echo "Running GRASP small"
-	for i in `seq $START_SMALL $END_SMALL`;
+	for i in `seq $START_SMALL 10 $END_SMALL`;
 	do
 		NUM=$(./convert $i $NUM_DIGITS)
 		{ /usr/bin/time -f "%e" ../grasp/greedy < Input$NUM.mh >> temp1.txt ; } 2>> temp1.txt
@@ -46,7 +46,7 @@ if [ $BRKGA_SMALL -eq 1 ]
 then
 	echo "Running BRKGA small"
 	g++ -c ../brkga/src/SampleDecoder.cpp
-	for i in `seq $START_SMALL $END_SMALL`;
+	for i in `seq $START_SMALL 10 $END_SMALL`;
 	do
 		sed -i '16s/.*/const unsigned n = '$i';/' ../brkga/src/samplecode.cpp
 		g++ SampleDecoder.o -o samplecode_$i ../brkga/src/samplecode.cpp
@@ -63,7 +63,7 @@ then
 	for i in `seq $START_BIG $END_BIG`;
 	do
 		NUM=$(./convert $i $NUM_DIGITS)
-		../generator/InputGenerator $PROCS $NUM_INST $NUM $NUM_DIGITS 0
+		../generator/InputGenerator $PROCS $NUM $NUM $NUM_DIGITS 0
 	done
 fi
 
@@ -84,6 +84,7 @@ fi
 if [ $BRKGA_BIG -eq 1 ]
 then
 	echo "Running BRKGA big"
+	g++ -c ../brkga/src/SampleDecoder.cpp
 	for i in `seq $START_BIG $END_BIG`;
 	do
 		sed -i '16s/.*/const unsigned n = '$i';/' ../brkga/src/samplecode.cpp

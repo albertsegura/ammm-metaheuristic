@@ -13,7 +13,7 @@ void print_chromosome(list<int> permutation);
 list<int> get_chromosome_list(std::vector< double >& chromosome);
 
 int main(int argc, char* argv[]) {
-const unsigned n = 64;
+const unsigned n = 750;
 	const unsigned p = 100; 	// size of population
 	const double pe = 0.20;		// fraction of population to be the elite-set
 	const double pm = 0.10;		// fraction of population to be replaced by mutants
